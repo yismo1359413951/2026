@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>天命蓝图 · 你的宇宙出厂设置</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --purple-deep:#0e0618;
+  --purple-mid:#1a0d30;
+  --purple-light:#2d1654;
+  --purple-glow:rgba(138,43,226,0.12);
+  --gold:#c9a84c;
+  --gold-light:#e8c86a;
+  --gold-dim:rgba(201,168,76,0.35);
+  --gold-bg:rgba(201,168,76,0.08);
+  --text:#f0e8d5;
+  --text-dim:rgba(240,232,213,0.6);
+  --text-mute:rgba(240,232,213,0.35);
+  --wood:#5a9e6e;--wood-bg:rgba(90,158,110,0.12);--wood-glow:rgba(90,158,110,0.25);
+  --fire:#c0452b;--fire-bg:rgba(192,69,43,0.12);--fire-glow:rgba(220,80,50,0.25);
+  --earth:#b8860b;--earth-bg:rgba(184,134,11,0.12);--earth-glow:rgba(210,160,20,0.25);
+  --metal:#8a9ba8;--metal-bg:rgba(138,155,168,0.12);--metal-glow:rgba(180,200,215,0.2);
+  --water:#2471a3;--water-bg:rgba(36,113,163,0.12);--water-glow:rgba(50,140,200,0.25);
+  --radius:18px;
+  --radius-sm:10px;
+}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--purple-deep);
+  color:var(--text);
+  font-family:'Noto Serif SC','STSong','SimSun',Georgia,serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  line-height:1.7;
+}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:2px}
+
+/* ══ Background ══ */
+.bg-mesh{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 20%,rgba(138,43,226,0.18) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 35% at 85% 80%,rgba(201,168,76,0.08) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 50%,rgba(36,113,163,0.07) 0%,transparent 70%);
+}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.star{position:absolute;border-radius:50%;animation:twinkle var(--d,3s) var(--delay,0s) infinite alternate}
+@keyframes twinkle{from{opacity:0.1;transform:scale(0.8)}to{opacity:0.7;transform:scale(1.2)}}
+
+/* ══ App wrapper ══ */
+.app{max-width:480px;margin:0 auto;position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* ══ Top bar ══ */
+.topbar{
+  padding:14px 20px;
+  display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid rgba(201,168,76,0.12);
+  position:sticky;top:0;z-index:100;
+  background:rgba(14,6,24,0.85);backdrop-filter:blur(12px);
+}
+.logo{font-size:16px;font-weight:700;letter-spacing:4px;color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,0.4)}
+.logo-en{font-size:9px;color:var(--text-mute);letter-spacing:3px;margin-top:2px}
+
+/* ══ Page system ══ */
+.pages{flex:1;position:relative}
+.page{
+  display:none;flex-direction:column;
+  padding:0 0 100px;
+  animation:pageIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+}
+.page.active{display:flex}
+@keyframes pageIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══ Progress bar ══ */
+.progress{
+  display:flex;align-items:center;gap:6px;
+  padding:12px 20px;
+}
+.prog-step{
+  height:3px;border-radius:2px;flex:1;
+  background:rgba(255,255,255,0.1);
+  transition:background 0.4s ease;
+}
+.prog-step.done{background:var(--gold-dim)}
+.prog-step.active{background:var(--gold);box-shadow:0 0 8px rgba(201,168,76,0.5)}
+.prog-label{font-size:11px;color:var(--text-mute);margin-left:4px;white-space:nowrap}
+
+/* ══ Nav buttons ══ */
+.nav-bar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  padding:16px 20px 28px;
+  background:linear-gradient(transparent,rgba(14,6,24,0.95) 40%);
+  z-index:99;
+  display:flex;gap:12px;align-items:center;
+}
+.btn-prev{
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+  border-radius:50px;padding:13px 22px;
+  color:var(--text-dim);font-size:14px;cursor:pointer;
+  font-family:inherit;flex-shrink:0;transition:all 0.2s;
+}
+.btn-prev:hover{background:rgba(255,255,255,0.1)}
+.btn-next{
+  flex:1;padding:14px;
+  background:linear-gradient(135deg,#c9a84c,#e8c86a,#c9a84c);
+  border:none;border-radius:50px;
+  color:#0e0618;font-size:15px;font-weight:800;
+  cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 24px rgba(201,168,76,0.4);
+  transition:all 0.2s;letter-spacing:0.5px;
+}
+.btn-next:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(201,168,76,0.55)}
+
+/* ══ Section helpers ══ */
+.section{padding:0 20px 20px}
+.sec-title{
+  font-size:20px;font-weight:700;letter-spacing:2px;color:var(--text);
+  margin-bottom:6px;
+}
+.sec-sub{font-size:13px;color:var(--text-mute);letter-spacing:1px}
+.sec-header{padding:24px 20px 16px;text-align:center}
+
+.divider{
+  display:flex;align-items:center;gap:10px;margin:20px 20px;
+}
+.div-line{flex:1;height:1px}
+.div-l{background:linear-gradient(to right,transparent,var(--gold-dim))}
+.div-r{background:linear-gradient(to left,transparent,var(--gold-dim))}
+.div-dot{color:var(--gold);font-size:12px;opacity:0.6}
+
+/* ══ Cards ══ */
+.card{
+  background:rgba(255,255,255,0.035);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius);padding:18px;
+}
+.card-gold{
+  background:var(--gold-bg);
+  border:1px solid rgba(201,168,76,0.2);
+  border-radius:var(--radius);padding:18px;
+}
+.card-purple{
+  background:rgba(138,43,226,0.08);
+  border:1px solid rgba(138,43,226,0.2);
+  border-radius:var(--radius);padding:18px;
+}
+
+/* ══ Quote style ══ */
+.quote{
+  border-left:3px solid var(--gold-dim);
+  padding-left:14px;font-style:italic;
+  color:rgba(240,232,213,0.8);font-size:15px;line-height:1.9;
+}
+
+/* ══ Tags ══ */
+.tag{
+  display:inline-block;
+  background:var(--gold-bg);border:1px solid rgba(201,168,76,0.22);
+  border-radius:20px;padding:4px 12px;font-size:12px;
+  color:rgba(240,232,213,0.65);margin:3px;
+}
+.tag-green{background:var(--wood-bg);border-color:rgba(90,158,110,0.3);color:#8ecf9a}
+.tag-blue{background:var(--water-bg);border-color:rgba(36,113,163,0.3);color:#7ab8d9}
+
+/* ══ Grid ══ */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+
+/* ══ Trait rows ══ */
+.trait{display:flex;gap:8px;margin-bottom:8px;font-size:13px;color:var(--text-dim);line-height:1.8}
+.trait-icon{flex-shrink:0;margin-top:2px}
+
+/* ══ Highlight box ══ */
+.hl{
+  background:var(--wood-bg);border:1px solid rgba(90,158,110,0.25);
+  border-radius:var(--radius-sm);padding:14px;
+  font-size:13px;color:var(--text-dim);line-height:1.9;
+}
+.hl-label{color:var(--wood);font-size:11px;letter-spacing:1px;margin-bottom:6px}
+.hl-warn{background:rgba(201,168,76,0.07);border-color:rgba(201,168,76,0.25)}
+.hl-label-gold{color:var(--gold)}
+
+/* ══ Tabs ══ */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:0 20px 12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);border-radius:20px;
+  padding:8px 14px;color:var(--text-mute);font-size:12px;
+  cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.2s;
+}
+.tab.active{background:rgba(201,168,76,0.16);border-color:rgba(201,168,76,0.45);color:var(--gold)}
+.panel{display:none}.panel.active{display:block}
+
+/* ══ Accordion ══ */
+.acc-header{
+  width:100%;background:none;border:none;padding:14px 16px;
+  color:var(--text-dim);font-size:13px;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:inherit;text-align:left;
+  background:rgba(255,255,255,0.025);transition:background 0.2s;
+}
+.acc-header:hover{background:rgba(255,255,255,0.05)}
+.acc-body{
+  padding:0 16px;font-size:13px;color:var(--text-dim);
+  line-height:1.9;max-height:0;overflow:hidden;transition:all 0.35s ease;
+}
+.acc-body.open{max-height:800px;padding:4px 16px 16px}
+
+/* ══ Timeline ══ */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{
+  content:'';position:absolute;left:6px;top:8px;bottom:8px;
+  width:1px;background:linear-gradient(to bottom,var(--gold-dim),transparent);
+}
+.tl-item{position:relative;margin-bottom:20px}
+.tl-dot{
+  position:absolute;left:-19px;top:6px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--gold);opacity:0.7;
+  box-shadow:0 0 6px rgba(201,168,76,0.5);
+}
+.tl-t{font-size:14px;color:var(--text);font-weight:600;margin-bottom:5px}
+.tl-b{font-size:13px;color:var(--text-dim);line-height:1.9}
+
+/* ══ Month cards ══ */
+.mc{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all 0.2s;
+}
+.mc:hover{border-color:var(--gold-dim)}
+.mc.active{background:var(--gold-bg);border-color:rgba(201,168,76,0.4)}
+.month-detail{
+  background:var(--gold-bg);border:1px solid rgba(201,168,76,0.2);
+  border-radius:var(--radius-sm);padding:16px;margin-top:12px;
+  display:none;animation:pageIn 0.3s ease both;
+}
+.month-detail.open{display:block}
+
+/* ══ Compat bar ══ */
+.cbar{height:5px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden;margin:5px 0}
+.cfill{height:100%;border-radius:3px;transition:width 1.2s ease}
+
+/* ══ Input styles ══ */
+.form-group{margin-bottom:18px}
+.form-label{font-size:13px;color:var(--text-dim);margin-bottom:8px;display:block;letter-spacing:1px}
+.form-input,.form-select{
+  width:100%;padding:13px 16px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:var(--radius-sm);
+  color:var(--text);font-size:14px;font-family:inherit;
+  outline:none;transition:all 0.2s;
+  -webkit-appearance:none;
+}
+.form-input:focus,.form-select:focus{border-color:var(--gold-dim);background:rgba(255,255,255,0.08)}
+.form-select option{background:#1a0d30;color:var(--text)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* ══ Eight pillars display ══ */
+.pillar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pillar{
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius-sm);padding:14px 10px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.pillar-label{font-size:10px;color:var(--text-mute);letter-spacing:1px;margin-bottom:6px}
+.pillar-stem{font-size:22px;font-weight:700;color:var(--gold);margin-bottom:2px}
+.pillar-branch{font-size:18px;color:var(--text);margin-bottom:6px}
+.pillar-el{font-size:10px;color:var(--text-mute);line-height:1.5}
+
+/* ══ Ziwei star display ══ */
+.palace-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.palace{
+  background:rgba(138,43,226,0.07);border:1px solid rgba(138,43,226,0.18);
+  border-radius:var(--radius-sm);padding:10px;text-align:center;
+  font-size:12px;
+}
+.palace.highlight{
+  background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.4);
+}
+.palace-name{color:var(--text-mute);font-size:10px;margin-bottom:4px;letter-spacing:1px}
+.palace-star{color:var(--text);font-size:13px;font-weight:600}
+.palace-star.main{color:var(--gold);font-size:14px}
+
+/* ══ Element ring ══ */
+.el-ring{
+  width:100px;height:100px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:0 auto 16px;position:relative;font-size:32px;
+}
+.el-orbit{
+  position:absolute;inset:-8px;border-radius:50%;
+  border:1px dashed rgba(201,168,76,0.25);
+  animation:spin 25s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══ Constitution badges ══ */
+.const-badge{
+  display:flex;gap:10px;align-items:center;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;
+}
+.const-icon{font-size:24px;flex-shrink:0}
+.const-bar{height:4px;border-radius:2px;margin-top:4px;
+  background:linear-gradient(to right,var(--water),transparent)}
+
+/* ══ Hero section ══ */
+.hero{
+  padding:32px 20px 24px;text-align:center;position:relative;
+}
+.hero-name{font-size:26px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
+.hero-sub{font-size:13px;color:var(--text-mute);letter-spacing:3px;margin-bottom:18px}
+
+/* ══ Scroll hint ══ */
+.scroll-hint{
+  text-align:center;font-size:11px;color:var(--text-mute);
+  padding:0 20px 8px;letter-spacing:1px;
+}
+
+/* ══ Cultural emoji cards ══ */
+.culture-card{
+  background:rgba(138,43,226,0.06);border:1px solid rgba(138,43,226,0.15);
+  border-radius:var(--radius);padding:18px;margin-bottom:12px;
+}
+.culture-emoji{font-size:32px;margin-bottom:10px}
+.culture-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px}
+.culture-hook{
+  background:var(--gold-bg);border:1px solid rgba(201,168,76,0.2);
+  border-radius:8px;padding:10px;margin-top:10px;
+  font-size:12px;color:var(--gold);
+}
+
+/* ══ Disclaimer ══ */
+.disclaimer{
+  text-align:center;font-size:11px;color:var(--text-mute);
+  padding:12px 24px;line-height:1.8;
+  border-top:1px solid rgba(255,255,255,0.05);margin-top:8px;
+}
+
+/* ══ Spinner ══ */
+.loader{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:var(--purple-deep);
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;
+}
+.loader.show{display:flex}
+.spinner{
+  width:60px;height:60px;border-radius:50%;
+  border:2px solid rgba(201,168,76,0.2);
+  border-top-color:var(--gold);
+  animation:spin 0.9s linear infinite;
+}
+.loader-text{font-size:14px;color:var(--text-dim);letter-spacing:2px}
+
+/* ══ Input page hero ══ */
+.input-hero{
+  padding:36px 20px 20px;text-align:center;
+}
+.input-hero h1{font-size:28px;font-weight:900;letter-spacing:3px;color:var(--gold);margin-bottom:8px;text-shadow:0 0 30px rgba(201,168,76,0.4)}
+.input-hero p{font-size:14px;color:var(--text-dim);line-height:1.8}
+
+/* utility */
+.pre{white-space:pre-line}
+.bold{font-weight:600}
+.gold-text{color:var(--gold)}
+.green-text{color:var(--wood)}
+.center{text-align:center}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+.fs12{font-size:12px}.fs13{font-size:13px}.fs14{font-size:14px}.fs15{font-size:15px}
+
+/* ══ CTA section ══ */
+.cta-section{
+  background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(138,43,226,0.08));
+  border:1px solid rgba(201,168,76,0.25);border-radius:20px;
+  padding:28px;text-align:center;margin:0 20px;
+}
+</style>
+</head>
+<body>
+
+<!-- Background effects -->
+
+<!-- ══ 口令验证界面 ══ -->
+<div id="lock-screen" style="
+  position:fixed;inset:0;z-index:9999;
+  background:#0e0618;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif SC','STSong',Georgia,serif;
+">
+  <div style="max-width:360px;width:90%;text-align:center;padding:0 20px">
+    <div style="font-size:48px;margin-bottom:16px;animation:float 3s infinite">🔮</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:3px;color:#c9a84c;margin-bottom:8px">天命蓝图</div>
+    <div style="font-size:11px;letter-spacing:4px;color:rgba(240,232,213,0.35);margin-bottom:32px">DESTINY BLUEPRINT</div>
+    <div style="font-size:13px;color:rgba(240,232,213,0.6);margin-bottom:20px;line-height:1.8">
+      请输入你的专属口令<br>
+      <span style="font-size:11px;color:rgba(240,232,213,0.35)">付款后由作者发送给你</span>
+    </div>
+    <input id="code-input" type="text" placeholder="输入口令（区分大小写）"
+      style="
+        width:100%;padding:14px 16px;
+        background:rgba(255,255,255,0.06);
+        border:1px solid rgba(201,168,76,0.3);
+        border-radius:12px;color:#f0e8d5;
+        font-size:16px;font-family:inherit;
+        text-align:center;letter-spacing:3px;
+        outline:none;margin-bottom:12px;
+        -webkit-appearance:none;
+      "
+      onkeydown="if(event.key==='Enter')verifyCode()"
+    >
+    <div id="code-error" style="font-size:12px;color:#e74c3c;min-height:18px;margin-bottom:10px"></div>
+    <button onclick="verifyCode()" id="verify-btn"
+      style="
+        width:100%;padding:15px;
+        background:linear-gradient(135deg,#c9a84c,#e8c86a);
+        border:none;border-radius:50px;
+        color:#0e0618;font-size:15px;font-weight:800;
+        cursor:pointer;font-family:inherit;
+        box-shadow:0 4px 24px rgba(201,168,76,0.4);
+        transition:all 0.2s;
+      "
+    >验证口令 →</button>
+    <div style="font-size:11px;color:rgba(240,232,213,0.25);margin-top:16px;line-height:1.8">
+      口令仅限本次使用 · 输入后请收藏本页<br>
+      本产品面向18周岁及以上用户
+    </div>
+  </div>
+</div>
+
+<div class="bg-mesh"></div>
+<div class="stars" id="stars"></div>
+
+<!-- Loading overlay -->
+<div class="loader" id="loader">
+  <div style="font-size:40px">🌌</div>
+  <div class="spinner"></div>
+  <div class="loader-text">正在推算你的天命蓝图...</div>
+  <div style="font-size:12px;color:var(--text-mute);letter-spacing:1px;margin-top:-10px">观星象 · 算干支 · 排命盘</div>
+</div>
+
+<div class="app">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="logo">天命蓝图</div>
+      <div class="logo-en">DESTINY BLUEPRINT</div>
+    </div>
+    <div id="page-indicator" style="font-size:12px;color:var(--text-mute)"></div>
+  </div>
+
+  <!-- Pages container -->
+  <div class="pages">
+
+    <!-- PAGE 1 · 信息输入 -->
+    <div class="page active" id="page-1">
+      <div class="input-hero">
+        <h1>天命蓝图</h1>
+        <p>输入你的出生信息<br>解锁专属于你的宇宙出厂设置</p>
+      </div>
+      <div class="section">
+        <div class="form-group">
+          <label class="form-label">你的名字（昵称也可以）</label>
+          <input class="form-input" id="inp-name" type="text" placeholder="输入你的名字" maxlength="10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">出生年份</label>
+          <select class="form-select" id="inp-year"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">出生月份</label>
+            <select class="form-select" id="inp-month"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">出生日期</label>
+            <select class="form-select" id="inp-day"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">出生时辰（可选）</label>
+          <select class="form-select" id="inp-hour">
+            <option value="unknown">不知道 / 跳过</option>
+            <option value="23">子时 23:00-01:00</option>
+            <option value="1">丑时 01:00-03:00</option>
+            <option value="3">寅时 03:00-05:00</option>
+            <option value="5">卯时 05:00-07:00</option>
+            <option value="7">辰时 07:00-09:00</option>
+            <option value="9">巳时 09:00-11:00</option>
+            <option value="11">午时 11:00-13:00</option>
+            <option value="13">未时 13:00-15:00</option>
+            <option value="15">申时 15:00-17:00</option>
+            <option value="17">酉时 17:00-19:00</option>
+            <option value="19">戌时 19:00-21:00</option>
+            <option value="21">亥时 21:00-23:00</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">性别</label>
+          <div style="display:flex;gap:12px">
+            <button class="gender-btn" onclick="setGender(this,'male')" style="flex:1;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;transition:all 0.2s">♂ 男</button>
+            <button class="gender-btn" onclick="setGender(this,'female')" style="flex:1;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;transition:all 0.2s">♀ 女</button>
+          </div>
+        </div>
+      </div>
+      <div class="disclaimer">
+        你输入的信息仅用于本次测算展示，不会被收集或储存<br>
+        本产品面向18周岁及以上用户
+      </div>
+      <div class="nav-bar">
+        <button class="btn-next" style="width:100%" onclick="startCalculate()">✨ 开启天命推算</button>
+      </div>
+    </div>
+
+    <!-- PAGE 2 · 命盘总览 -->
+    <div class="page" id="page-2">
+      <div class="progress" id="progress-2"></div>
+      <div class="hero">
+        <div class="hero-name" id="hero-name">— · —</div>
+        <div id="hero-sub" style="font-size:13px;color:var(--text-mute);letter-spacing:2px;margin-bottom:12px"></div>
+        <div id="hero-quote" class="quote" style="text-align:left;max-width:320px;margin:0 auto 14px"></div>
+        <div id="hero-tags" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px"></div>
+      </div>
+      <div class="divider"><div class="div-line div-l"></div><span class="div-dot">✦</span><div class="div-line div-r"></div></div>
+      <div class="section">
+        <div style="font-size:13px;color:var(--gold);margin-bottom:12px">🀄 你的四柱八字</div>
+        <div class="pillar-grid" id="pillar-grid">
+          <div class="pillar"><div class="pillar-label">年柱</div><div class="pillar-stem">—</div><div class="pillar-branch">—</div><div class="pillar-el">—</div></div>
+          <div class="pillar"><div class="pillar-label">月柱</div><div class="pillar-stem">—</div><div class="pillar-branch">—</div><div class="pillar-el">—</div></div>
+          <div class="pillar" style="border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.06)"><div class="pillar-label">日柱 ★</div><div class="pillar-stem">—</div><div class="pillar-branch">—</div><div class="pillar-el">—</div></div>
+          <div class="pillar"><div class="pillar-label">时柱</div><div class="pillar-stem">—</div><div class="pillar-branch">—</div><div class="pillar-el">—</div></div>
+        </div>
+      </div>
+      <div class="section" style="margin-top:8px">
+        <div style="font-size:13px;color:var(--gold);margin-bottom:12px">🔮 五行能量分布</div>
+        <div id="el-bars"></div>
+      </div>
+      <div class="section" style="margin-top:8px">
+        <div class="card-gold" id="overview-card">
+          <div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div>
+        </div>
+      </div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(1)">← 重填</button>
+        <button class="btn-next" onclick="goPage(3)">探索八字深度 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 3 · 八字深度解读 -->
+    <div class="page" id="page-3">
+      <div class="progress" id="progress-3"></div>
+      <div class="hero" style="padding-bottom:20px">
+        <div style="font-size:13px;letter-spacing:4px;color:rgba(201,168,76,0.55);margin-bottom:8px">第2章</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">八字四柱</div>
+        <div style="font-size:12px;color:var(--text-mute)">你这个人是什么"材质"做的</div>
+      </div>
+      <div class="section" id="bazi-deep"><div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div></div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(2)">← 总览</button>
+        <button class="btn-next" onclick="goPage(4)">紫微主星 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 4 · 紫微主星 -->
+    <div class="page" id="page-4">
+      <div class="progress" id="progress-4"></div>
+      <div class="hero" style="padding-bottom:20px">
+        <div style="font-size:13px;letter-spacing:4px;color:rgba(201,168,76,0.55);margin-bottom:8px">第3章</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">紫微主星</div>
+        <div style="font-size:12px;color:var(--text-mute)">你命盘里的核心能量中枢</div>
+      </div>
+      <div class="section" id="ziwei-content"><div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div></div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(3)">← 八字</button>
+        <button class="btn-next" onclick="goPage(5)">五行体质 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 5 · 五行体质 -->
+    <div class="page" id="page-5">
+      <div class="progress" id="progress-5"></div>
+      <div class="hero" style="padding-bottom:20px">
+        <div style="font-size:13px;letter-spacing:4px;color:rgba(201,168,76,0.55);margin-bottom:8px">第4章</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">五行体质</div>
+        <div style="font-size:12px;color:var(--text-mute)">你的身体能量与日常调养</div>
+      </div>
+      <div class="section" id="tcm-content"><div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div></div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(4)">← 紫微</button>
+        <button class="btn-next" onclick="goPage(6)">深度性格 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 6 · 深度性格 -->
+    <div class="page" id="page-6">
+      <div class="progress" id="progress-6"></div>
+      <div class="hero" style="padding-bottom:20px">
+        <div style="font-size:13px;letter-spacing:4px;color:rgba(201,168,76,0.55);margin-bottom:8px">第5章</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">深度性格</div>
+        <div style="font-size:12px;color:var(--text-mute)">你真实的内心运作方式</div>
+      </div>
+      <div class="section">
+        <div style="font-size:13px;color:var(--gold);margin-bottom:12px">🪞 你的核心人格</div>
+        <div id="char-core"><div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div></div>
+      </div>
+      <div class="section">
+        <div style="font-size:13px;color:var(--gold);margin-bottom:12px">💞 感情模式</div>
+        <div id="char-romance"></div>
+      </div>
+      <div class="section">
+        <div style="font-size:13px;color:var(--gold);margin-bottom:12px">💼 职业方向</div>
+        <div id="char-career"></div>
+      </div>
+      <div class="section">
+        <div style="font-size:13px;color:var(--gold);margin-bottom:12px">🌱 成长课题</div>
+        <div id="char-growth"></div>
+      </div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(5)">← 五行</button>
+        <button class="btn-next" onclick="goPage(7)">关系兼容 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 7 · 关系兼容 -->
+    <div class="page" id="page-7">
+      <div class="progress" id="progress-7"></div>
+      <div class="hero" style="padding-bottom:20px">
+        <div style="font-size:13px;letter-spacing:4px;color:rgba(201,168,76,0.55);margin-bottom:8px">第6章</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">关系兼容</div>
+        <div style="font-size:12px;color:var(--text-mute)">你和五种类型人的相处模式</div>
+      </div>
+      <div class="section" id="compat-content"><div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div></div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(6)">← 性格</button>
+        <button class="btn-next" onclick="goPage(8)">2026运势 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 8 · 2026运势 -->
+    <div class="page" id="page-8">
+      <div class="progress" id="progress-8"></div>
+      <div class="hero" style="padding-bottom:20px">
+        <div style="font-size:13px;letter-spacing:4px;color:rgba(201,168,76,0.55);margin-bottom:8px">第7章</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">2026运势</div>
+        <div style="font-size:12px;color:var(--text-mute)">丙午年对你意味着什么</div>
+      </div>
+      <div class="section" id="year2026-content"><div style="text-align:center;color:var(--text-mute);padding:20px">正在推算...</div></div>
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(7)">← 关系</button>
+        <button class="btn-next" onclick="goPage(9)">文化彩蛋 →</button>
+      </div>
+    </div>
+
+    <!-- PAGE 9 · 文化彩蛋 -->
+    <div class="page" id="page-9">
+      <div class="progress" id="progress-9"></div>
+      <div class="sec-header">
+        <div style="font-size:32px;margin-bottom:10px">🏮</div>
+        <div class="sec-title">老祖宗真的很厉害</div>
+        <div class="sec-sub">年轻人视角·传统文化·你没想到的那些事</div>
+      </div>
+
+      <div class="section">
+        <div class="card-gold mb16" style="text-align:center">
+          <div class="fs13" style="color:var(--text-dim);line-height:1.9">
+            你知道吗——五行、八字、紫微斗数，不是玄学，是古人用几千年观察总结出的<span style="color:var(--gold)">「文化智慧」</span>。他们没有计算机，没有统计学，但用肉眼观星、用经验积累，建立了一套描述「人与自然关系」的复杂模型。放在今天，这相当于什么？数据科学加上心理学加上天文学。
+          </div>
+        </div>
+
+        <div class="culture-card">
+          <div class="culture-emoji">🧮</div>
+          <div class="culture-title">八字为什么能"算"人格？</div>
+          <div class="fs13" style="color:var(--text-dim);line-height:1.9">
+            现代科学有个分支叫"时间生物学"——研究出生季节、时间对人的气质、体质的影响。研究发现，出生在不同季节的人，确实在神经系统、激素水平上有统计学差异。<br><br>
+            八字不是预测"命运的剧情"，而是记录你出生时"宇宙能量的配比"——这个配比影响你的底层气质，就像土壤影响植物的生长方式，不决定开什么花，但影响根系的结构。
+          </div>
+          <div class="culture-hook">🤯 年轻人钩子：你的"出厂设置"是有科学基础的，不是玄学而是系统论。</div>
+        </div>
+
+        <div class="culture-card">
+          <div class="culture-emoji">🌌</div>
+          <div class="culture-title">紫微斗数：古代版"星盘系统"</div>
+          <div class="fs13" style="color:var(--text-dim);line-height:1.9">
+            西方有星座，东方有紫微斗数——但紫微斗数精细度远超12星座。它有12个宫位×144颗星的组合，理论上没有两个人的命盘是完全一样的。<br><br>
+            更有趣的是：紫微斗数的命宫、财帛宫、夫妻宫这些分类，和现代心理学的"核心自我""依附风格""职业性格"的分类逻辑出奇地相似——只是描述语言不同。<br><br>
+            古人没有弗洛伊德，没有MBTI，但他们用星辰的语言，说了同一件事。
+          </div>
+          <div class="culture-hook">🤯 年轻人钩子：紫微斗数=古代版多维度人格测评系统，比MBTI早了1000年。</div>
+        </div>
+
+        <div class="culture-card">
+          <div class="culture-emoji">⚖️</div>
+          <div class="culture-title">五行相克为什么不等于"坏"？</div>
+          <div class="fs13" style="color:var(--text-dim);line-height:1.9">
+            很多人一听"相克"就怕。但古人说的"克"，是「约束」，不是「毁灭」。<br><br>
+            树（木）需要被修剪才能长得更好——这是金克木。<br>
+            火（火）需要水来控制才不会失控——这是水克火。<br>
+            生态系统里，捕食者和猎物是相克的，但这个克，维持了整个生态的平衡。<br><br>
+            所以"相克"的关系，往往是让你成长最快的关系，让你磨砺出真正的棱角。
+          </div>
+          <div class="culture-hook">🤯 年轻人钩子：相克=成长型关系，不是不合适，是帮你磨出更好状态的砂纸。</div>
+        </div>
+
+        <div class="culture-card">
+          <div class="culture-emoji">🔢</div>
+          <div class="culture-title">洛书：古代人怎么描述"能量节奏"？</div>
+          <div class="fs13" style="color:var(--text-dim);line-height:1.9">
+            洛书来自传说中大禹治水时，神龟背上出现的九宫格图——每行每列相加都是15，这个图被称为「幻方」，是世界上已知最古老的数学智慧之一。<br><br>
+            但古人用这个图来描述的，不是数学，而是「能量的流动周期」——九个格子，代表九种基本的宇宙运作节奏。每个人出生时，都对应一个格子，这个格子决定了你的人生节奏模式。<br><br>
+            现代心理学里有个概念叫"心理时间"——不同的人对时间的主观感知不一样，有人天生节奏快，有人天生走得慢。洛书数，是古人对这件事的描述方式。
+          </div>
+          <div class="culture-hook">🤯 年轻人钩子：洛书=古代版人生节奏测评，数学+哲学+宇宙观的结合体。</div>
+        </div>
+
+        <div class="culture-card">
+          <div class="culture-emoji">🌿</div>
+          <div class="culture-title">中医体质：你的身体，是一个生态系统</div>
+          <div class="fs13" style="color:var(--text-dim);line-height:1.9">
+            中医的核心不是"头痛治头"，而是把人体看成一个生态系统——每个脏腑有自己的角色，情绪、饮食、环境都是生态因子，失衡才是病，平衡就是健康。<br><br>
+            这和现代系统生物学的思路惊人地相似。2015年，《科学》杂志发表了一篇研究，发现古代中医的经络系统，与现代解剖学里的筋膜系统高度重叠——古人没有手术刀，但他们用针和手感，摸索出了筋膜网络的分布。<br><br>
+            这不是运气，这是几千年观察积累的智慧。
+          </div>
+          <div class="culture-hook">🤯 年轻人钩子：中医=古代版系统生物学，用的是不同的语言，说的是同一件事。</div>
+        </div>
+
+        <div class="card-gold mt16 center">
+          <div style="font-size:22px;margin-bottom:8px">🔁</div>
+          <div class="fs14 bold" style="color:var(--text);margin-bottom:8px">你觉得有意思吗？</div>
+          <div class="fs13" style="color:var(--text-dim);line-height:1.8;margin-bottom:14px">把这个发给最了解你的朋友，让他看看「分析得准不准」——如果说中了，那是老祖宗的功劳</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+            <span class="tag">📲 分享给朋友</span>
+            <span class="tag">👥 看他怎么说</span>
+            <span class="tag">🎯 让他也测一下</span>
+          </div>
+        </div>
+
+        <div class="divider"><div class="div-line div-l"></div><span class="div-dot">✦</span><div class="div-line div-r"></div></div>
+
+        <div class="cta-section">
+          <div style="font-size:28px;margin-bottom:10px">🏮</div>
+          <div style="font-size:20px;font-weight:700;letter-spacing:1px;margin-bottom:8px">你的天命蓝图</div>
+          <div class="fs14" style="color:var(--text-dim);line-height:1.9;margin-bottom:20px">
+            你刚刚看完的，是完整版天命蓝图<br>
+            八字 · 紫微 · 五行 · 体质 · 性格 · 关系 · 运势
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px">
+            <span class="tag-green">✓ 八字四柱解读</span>
+            <span class="tag-green">✓ 紫微主星分析</span>
+            <span class="tag-green">✓ 五行能量图谱</span>
+            <span class="tag-green">✓ 中医体质参考</span>
+            <span class="tag-green">✓ 深度性格解读</span>
+            <span class="tag-green">✓ 关系兼容地图</span>
+            <span class="tag-green">✓ 2026年度运势</span>
+            <span class="tag-green">✓ 月度具体建议</span>
+          </div>
+          <div class="fs12" style="color:var(--text-mute)">📌 建议收藏本页链接，长期可查看</div>
+        </div>
+
+        <div class="disclaimer">
+          本工具基于中国传统文化体系（八字命理·紫微斗数·中医体质学说）<br>
+          所有内容仅供参考与文化体验，<strong>不构成任何专业建议</strong><br>
+          ⚠️ 养生内容仅为日常参考，不构成医疗诊断，健康问题请咨询执业医师<br>
+          ⚠️ 运势分析不构成预测，重大财务/人生决策请理性独立判断<br>
+          ⚠️ 您输入的出生信息仅用于本次测算展示，不会被收集或储存<br>
+          本产品面向18周岁及以上用户 · 你永远是自己命运的主人 ✦ 2026
+        </div>
+      </div>
+
+      <div class="nav-bar">
+        <button class="btn-prev" onclick="goPage(8)">← 2026运势</button>
+        <button class="btn-next" onclick="goPage(1)">🔄 重新测算</button>
+      </div>
+    </div>
+
+  </div><!-- /pages -->
+</div><!-- /app -->
+
+<script>
+window.addEventListener('DOMContentLoaded',function(){
+
+// ═══════════════════════════════
+// Stars
+// ═══════════════════════════════
+(function(){
+  const c=document.getElementById('stars');
+  if(!c)return;
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const size=Math.random()*2+1;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:rgba(255,255,255,${Math.random()*0.4+0.1});--d:${Math.random()*4+2}s;--delay:${Math.random()*5}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ═══════════════════════════════
+// Form init
+// ═══════════════════════════════
+(function(){
+  const y=document.getElementById('inp-year');
+  if(!y)return;
+  for(let i=2005;i>=1940;i--){const o=document.createElement('option');o.value=i;o.textContent=i+'年';y.appendChild(o);}
+  const m=document.getElementById('inp-month');
+  const mn=['一','二','三','四','五','六','七','八','九','十','十一','十二'];
+  for(let i=1;i<=12;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'月（'+mn[i-1]+'月）';m.appendChild(o);}
+  const d=document.getElementById('inp-day');
+  for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'日';d.appendChild(o);}
+})();
+
+let selectedGender='male';
+function setGender(btn,g){
+  selectedGender=g;
+  document.querySelectorAll('.gender-btn').forEach(b=>{b.style.borderColor='rgba(255,255,255,0.12)';b.style.color='var(--text)'});
+  btn.style.borderColor='var(--gold)';btn.style.color='var(--gold)';
+}
+// gender默认选中
+  var gb=document.querySelectorAll('.gender-btn');
+  if(gb[0]){gb[0].style.borderColor='var(--gold)';gb[0].style.color='var(--gold)';}
+
+}); // end DOMContentLoaded
+
+// ═══════════════════════════════
+// Page navigation
+// ═══════════════════════════════
+const TOTAL_PAGES=9;
+let currentPage=1;
+
+function goPage(n){
+  document.getElementById('page-'+currentPage).classList.remove('active');
+  currentPage=n;
+  document.getElementById('page-'+n).classList.add('active');
+  document.getElementById('page-'+n).scrollTop=0;
+  window.scrollTo(0,0);
+  updateProgress(n);
+  updateIndicator(n);
+}
+
+function updateProgress(n){
+  const id='progress-'+n;
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML='';
+  for(let i=2;i<=TOTAL_PAGES;i++){
+    const d=document.createElement('div');
+    d.className='prog-step'+(i<n?' done':i===n?' active':'');
+    el.appendChild(d);
+  }
+  const lbl=document.createElement('div');
+  lbl.className='prog-label';
+  lbl.textContent=(n-1)+'/'+(TOTAL_PAGES-1);
+  el.appendChild(lbl);
+}
+
+function updateIndicator(n){
+  const el=document.getElementById('page-indicator');
+  const names=['','输入','总览','八字','紫微','五行','性格','关系','运势','文化'];
+  el.textContent=n>1?'第'+(n-1)+'章 · '+names[n]:'';
+}
+
+// ═══════════════════════════════
+// Calculate & animate
+// ═══════════════════════════════
+
+// ═══════════════════════════════════════
+// 天命蓝图动态计算引擎
+// ═══════════════════════════════════════
+
+// 天干
+const STEMS = ['庚','辛','壬','癸','甲','乙','丙','丁','戊','己'];
+const STEM_EL = ['金','金','水','水','木','木','火','火','土','土'];
+// 地支
+const BRANCHES = ['申','酉','戌','亥','子','丑','寅','卯','辰','巳','午','未'];
+const BRANCH_EL = ['金','金','土','水','水','土','木','木','土','火','火','土'];
+// 地支生肖
+const ZODIAC = ['猴','鸡','狗','猪','鼠','牛','虎','兔','龙','蛇','马','羊'];
+// 纳音
+const NAYIN = {
+  '庚申':'石榴木','辛酉':'石榴木','壬戌':'大海水','癸亥':'大海水',
+  '甲子':'海中金','乙丑':'海中金','丙寅':'炉中火','丁卯':'炉中火',
+  '戊辰':'大林木','己巳':'大林木','庚午':'路旁土','辛未':'路旁土',
+  '壬申':'剑锋金','癸酉':'剑锋金','甲戌':'山头火','乙亥':'山头火',
+  '丙子':'涧下水','丁丑':'涧下水','戊寅':'城头土','己卯':'城头土',
+  '庚辰':'白蜡金','辛巳':'白蜡金','壬午':'杨柳木','癸未':'杨柳木',
+  '甲申':'泉中水','乙酉':'泉中水','丙戌':'屋上土','丁亥':'屋上土',
+  '戊子':'霹雳火','己丑':'霹雳火','庚寅':'松柏木','辛卯':'松柏木',
+  '壬辰':'长流水','癸巳':'长流水','甲午':'沙中金','乙未':'沙中金',
+  '丙申':'山下火','丁酉':'山下火','戊戌':'平地木','己亥':'平地木',
+  '庚子':'壁上土','辛丑':'壁上土','壬寅':'金箔金','癸卯':'金箔金',
+  '甲辰':'覆灯火','乙巳':'覆灯火','丙午':'天河水','丁未':'天河水',
+  '戊申':'大驿土','己酉':'大驿土','庚戌':'钗钏金','辛亥':'钗钏金',
+  '壬子':'桑柘木','癸丑':'桑柘木','甲寅':'大溪水','乙卯':'大溪水',
+  '丙辰':'沙中土','丁巳':'沙中土','戊午':'天上火','己未':'天上火',
+  '庚申':'石榴木','辛酉':'石榴木','壬戌':'大海水','癸亥':'大海水',
+};
+
+// 月柱天干（年干*2 + 月数 映射）
+const MONTH_STEMS = [
+  ['壬','癸','甲','乙','丙','丁','戊','己','庚','辛','壬','癸'], // 甲/己年
+  ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸','甲','乙'], // 乙/庚年
+  ['丙','丁','戊','己','庚','辛','壬','癸','甲','乙','丙','丁'], // 丙/辛年
+  ['戊','己','庚','辛','壬','癸','甲','乙','丙','丁','戊','己'], // 丁/壬年
+  ['庚','辛','壬','癸','甲','乙','丙','丁','戊','己','庚','辛'], // 戊/癸年
+];
+const MONTH_BRANCHES = ['寅','卯','辰','巳','午','未','申','酉','戌','亥','子','丑'];
+
+// 时柱地支
+const HOUR_BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+
+function getYearPillar(year) {
+  const si = (year - 4) % 60;
+  const stemIdx = si % 10;
+  const branchIdx = si % 12;
+  return { stem: STEMS[stemIdx], branch: BRANCHES[branchIdx], zodiac: ZODIAC[branchIdx], stemEl: STEM_EL[stemIdx], branchEl: BRANCH_EL[branchIdx] };
+}
+
+function getMonthPillar(year, month) {
+  const yearStem = STEMS[(year - 4) % 10];
+  const stemGroupMap = {'甲':0,'己':0,'乙':1,'庚':1,'丙':2,'辛':2,'丁':3,'壬':3,'戊':4,'癸':4};
+  const group = stemGroupMap[yearStem];
+  const mIdx = month - 1;
+  const stem = MONTH_STEMS[group][mIdx];
+  const branch = MONTH_BRANCHES[mIdx];
+  return { stem, branch, stemEl: STEM_EL[STEMS.indexOf(stem)], branchEl: BRANCH_EL[BRANCHES.indexOf(branch)] };
+}
+
+function getDayPillar(year, month, day) {
+  // 简化公式计算日柱
+  const base = new Date(1900, 0, 31);
+  const target = new Date(year, month-1, day);
+  const diff = Math.floor((target - base) / 86400000);
+  const si = ((diff % 60) + 60) % 60;
+  const stemIdx = si % 10;
+  const branchIdx = si % 12;
+  return { stem: STEMS[stemIdx], branch: BRANCHES[branchIdx], stemEl: STEM_EL[stemIdx], branchEl: BRANCH_EL[branchIdx] };
+}
+
+function getHourPillar(dayPillar, hour) {
+  const hIdx = Math.floor(((hour + 1) % 24) / 2);
+  const branch = HOUR_BRANCHES[hIdx];
+  const dayStemGroupMap = {'甲':0,'己':0,'乙':1,'庚':1,'丙':2,'辛':2,'丁':3,'壬':3,'戊':4,'癸':4};
+  const group = dayStemGroupMap[dayPillar.stem] || 0;
+  const stem = MONTH_STEMS[group][hIdx];
+  return { stem, branch, stemEl: STEM_EL[STEMS.indexOf(stem)], branchEl: BRANCH_EL[BRANCHES.indexOf(branch)] };
+}
+
+function calcFiveElements(pillars) {
+  const score = { 木:0, 火:0, 土:0, 金:0, 水:0 };
+  pillars.forEach(p => {
+    score[p.stemEl] = (score[p.stemEl]||0) + 1;
+    score[p.branchEl] = (score[p.branchEl]||0) + 1;
+  });
+  return score;
+}
+
+function getDominant(score) {
+  return Object.entries(score).sort((a,b) => b[1]-a[1])[0][0];
+}
+
+function getWeakest(score) {
+  return Object.entries(score).sort((a,b) => a[1]-b[1])[0][0];
+}
+
+// 五行内容库
+const EL_DATA = {
+  '木': {
+    emoji:'🌿', color:'#5a9e6e', colorBg:'rgba(90,158,110,0.15)',
+    title:'木型人 · 生长·创造',
+    daymaster_desc:'你是「木」日主——生长型人格。骨子里有强烈的向上突破欲望，对束缚天然敏感，追求自由和独立。',
+    pattern_name:'生长旺盛格',
+    pattern_desc:'木气旺盛，你的核心能量是创造与生长。这个格局的人通常有很强的自我驱动力，一旦找到方向就会迸发出惊人的执行力。',
+    ten_gods:'木日主的「正财」在土——你赚钱靠务实积累，不是投机；「印星」在水——你的能量来源是持续学习和深度思考；「官星」在金——规则和边界对你来说是需要适应的课题。',
+    nayin_insight:'你出生时辰的纳音代表你内在能量的诗意底色——木型人往往有一种「破土而出」的生命质感。',
+    personality_core:'你是那种「越了解越有分量」的人。初见觉得好相处，深交才知道你有多少自己的想法。你的包容不是没立场，是见过太多，懒得争了。',
+    personality_traits:[
+      '对不公平的事特别敏感，心里记账，不一定当场说，但不会忘',
+      '在陌生人面前表现还不错，在真正熟悉的人面前才会暴露真实的焦虑',
+      '喜欢把复杂的事情想清楚再开口，所以有时候显得慢热，其实一直在观察',
+      '对自己感兴趣的事会全身心投入，对不感兴趣的几乎调动不了热情'
+    ],
+    romance:'你在感情里是「慢热型」——进入关系需要时间，但一旦认定，就会记住对方说过的每一句话。你的爱很细腻，给出去的时候是真实的。最难的课题是：你容易把委屈往心里藏，等积累到临界点突然冷掉，对方完全懵了。',
+    career:'你天生的方向是「创造型」工作——内容创作、设计、策划、教育、文化都是你的舒适区。你的核心竞争力是把抽象的东西具体化，让别人理解你看到的世界。',
+    growth:'你这辈子最核心的课题是：学会「在过程中」相信自己，而不只是在出结果之后。你总是先做到了，才敢说"我能做到"——但这个顺序可以换。',
+    tcm:'木型人肝胆是能量中枢。你的情绪和身体状态高度相关——心里憋着事，身体会先反应。伸展类运动（瑜伽、游泳）对你特别有益，帮助疏导肝气。⚠️以上为日常参考，健康问题请咨询执业医师。',
+    compat:{ '木':'两个木型人在一起能量相似，最懂对方，但也容易两个人都拖延、都等对方先动。',  '火':'木生火——你给火型人提供灵感和深度，对方给你热情和推动力，是互补型关系。', '土':'木克土——你容易不自觉地主导这段关系，对方承载能力强但需要你主动表达感谢。', '金':'金克木——金型人的直接和原则感会让你感到压力，但也能帮你打磨出更好的版本。', '水':'水生木——水型人是你天然的能量补给，对话有深度，理解你不用解释。'},
+    year2026:'2026丙午年，火气较旺，木生火——这是你向外输出、被看见的一年。适合把之前积累的东西往外走一步，创作、表达、社交都是值得投入的方向。⚠️运势分析仅供参考，不构成预测。',
+  },
+  '火': {
+    emoji:'🔥', color:'#c0452b', colorBg:'rgba(192,69,43,0.15)',
+    title:'火型人 · 热情·绽放',
+    daymaster_desc:'你是「火」日主——绽放型人格。天生有一种感染力，走进屋子气氛就不一样。你不是刻意想出风头，是能量自然外放。',
+    pattern_name:'火焰旺盛格',
+    pattern_desc:'火气旺盛，你的核心能量是热情与感染。这个格局的人有超强的号召力，能在短时间内让陌生人感到温暖和信任。',
+    ten_gods:'火日主的「印星」在木——你的能量来源是激励性的人和故事；「财星」在金——你赚钱靠的是影响力和人脉；「官星」在水——情绪管理是你一生的修炼课题。',
+    nayin_insight:'火型人的内在底色往往是一种「燃烧感」——你对生命有强烈的投入欲望，不愿意浑浑噩噩。',
+    personality_core:'你是那种让人「第一次见就记住」的人。不是因为你刻意表现，是你的能量自然就在那里。但很少有人知道，你的内心比外表敏感得多。',
+    personality_traits:[
+      '直觉非常准——对人和事的第一感觉，事后往往证明是对的',
+      '情绪来得快去得快，不记仇，但也容易因为说话太直在不知情的情况下伤到别人',
+      '行动力很强，想到就做，但有时候没想清楚就冲出去了',
+      '对你认可的人会全力支持，对你看不上的事情完全不想浪费时间'
+    ],
+    romance:'你在感情里热烈、真实、给出去不留余地。你爱一个人的时候不会隐藏，但也容易忽冷忽热——不是不爱了，是你的能量本来就有波动。最需要的是：一个能接住你热情、同时不会被你偶尔的冷淡吓跑的人。',
+    career:'你天生适合「面向人」的工作——销售、演讲、直播、品牌、公关、领导力类角色都能让你发光。你的核心竞争力是感染力和行动力，最好的状态是有明确目标、快速行动、及时复盘。',
+    growth:'你这辈子最核心的课题是：学会「可持续地燃烧」，而不是一次性全部用完。你有强大的能量，但能量是有限的——学会给自己充电，比学会输出更重要。',
+    tcm:'火型人心脑血管是重点。你的精力消耗很快，需要主动给自己设置休息节点。睡眠质量对你的状态影响巨大，情绪管理类练习（冥想、深呼吸）值得尝试。⚠️以上为日常参考，健康问题请咨询执业医师。',
+    compat:{'木':'木生火——木型人给你源源不断的灵感和支持，你们在一起有种越聊越兴奋的感觉。','火':'两个火型人能量叠加，非常热闹，但也容易两个人都冲动，需要一个人主动踩刹车。','土':'火生土——你输出能量，土型人承接，这段关系里你通常是主导。注意不要消耗过度。','金':'火克金——关系里有张力，金型人的原则感会让你感到受限，但也能帮你更有结构感。','水':'水克火——水型人让你感到被压制，但如果双方成熟，反而能形成很好的互补。'},
+    year2026:'2026丙午年，丙火+午火双火叠加，对火型人来说能量非常旺盛。适合大胆推进重要计划，但也要注意不要把自己烧完——节奏和休息同样重要。⚠️运势分析仅供参考，不构成预测。',
+  },
+  '土': {
+    emoji:'🏔️', color:'#b8860b', colorBg:'rgba(184,134,11,0.15)',
+    title:'土型人 · 稳定·承载',
+    daymaster_desc:'你是「土」日主——承载型人格。你是那种朋友圈里稳稳的大地，有事第一个想到你。你的力量不是爆发型的，是持续型的。',
+    pattern_name:'厚土承载格',
+    pattern_desc:'土气旺盛，你的核心能量是稳定与承载。这个格局的人往往是团队和家庭里的定海神针，能扛事、靠得住、说到做到。',
+    ten_gods:'土日主的「印星」在火——你的能量来源是温暖的人际关系和被认可的感觉；「财星」在水——你赚钱靠的是务实积累和信任；「官星」在木——成长和突破是你的外部推动力。',
+    nayin_insight:'土型人的内在底色是一种「山岳感」——不是最显眼的，但是最稳的那个。别人依靠你，你也需要学会依靠别人。',
+    personality_core:'你是那种「越相处越信任」的人。不会一开始就把所有东西摆出来，但熟了之后会发现你有多真实、多可靠。你最大的能量是稳定，最大的挑战是让自己也被照顾到。',
+    personality_traits:[
+      '承载力很强，别人的情绪和压力你都能接住，但自己的情绪经常往下压',
+      '对已经认定的事和人有很强的坚持，不容易放弃，但也不容易改变方向',
+      '说到做到，很少开空头支票，承诺了就会尽力实现',
+      '对变化有些抗拒，需要时间适应新环境和新节奏，但适应之后会做得很好'
+    ],
+    romance:'你在感情里是「给予型」——愿意付出、愿意承担、愿意等。但你有一个很深的模式：把自己的需求排在最后，等对方来猜。时间长了，你会觉得累，对方可能还不知道你已经积累了多少委屈。你需要的是：学会主动说出"我需要什么"。',
+    career:'你天生适合「需要可靠性」的工作——项目管理、运营、人力、教育、医疗都是你的舒适区。你的核心竞争力是执行力和信任感，人们愿意把重要的事情交给你，因为你不会让人失望。',
+    growth:'你这辈子最核心的课题是：允许自己也是需要被照顾的人。你太习惯成为别人的依靠了，有时候忘记了自己也有需求。学会接受帮助，和给出帮助一样重要。',
+    tcm:'土型人脾胃是弱项。情绪压力容易直接反映在消化系统——焦虑时容易胃不舒服、吃不下或吃太多。规律饮食、细嚼慢咽、少思虑是对你最实用的养生建议。⚠️以上为日常参考，健康问题请咨询执业医师。',
+    compat:{'木':'木克土——木型人会主动推动你改变，短期有压力感，长期能帮你突破舒适区。','火':'火生土——火型人给你热情和能量，你们在一起你会感到被激励，关系里你通常是那个更稳的。','土':'两个土型人在一起非常稳定，但也容易太安逸，需要主动给关系注入新鲜感。','金':'土生金——你支持金型人，对方给你原则感和结构感，是务实型的互补关系。','水':'水克土——水型人的流动感和变化感会让你感到不安，但也能帮你看到更多可能性。'},
+    year2026:'2026丙午年，火生土，是对土型人比较有滋养感的一年。之前积累的东西值得往外走一步，适合推进重要关系和项目，能量状态相对较好。⚠️运势分析仅供参考，不构成预测。',
+  },
+  '金': {
+    emoji:'⚔️', color:'#8a9ba8', colorBg:'rgba(138,155,168,0.15)',
+    title:'金型人 · 精准·收获',
+    daymaster_desc:'你是「金」日主——精准型人格。你一眼能看穿问题核心，不废话但句句到位。对品质敏感，不将就，这不是挑剔，是你的标准。',
+    pattern_name:'金气精锐格',
+    pattern_desc:'金气旺盛，你的核心能量是精准与收获。这个格局的人有超强的判断力和原则感，不容易被忽悠，也不会轻易妥协。',
+    ten_gods:'金日主的「印星」在土——你的能量来源是踏实积累和结构感；「财星」在木——你赚钱靠的是眼光和专业能力；「官星」在火——激情和目标感是你的外部驱动力。',
+    nayin_insight:'金型人的内在底色是一种「刀锋感」——锋利、清晰、不拖泥带水。你对模糊和低效有天然的不耐烦。',
+    personality_core:'你是那种「少说话但说出来都有分量」的人。不是故意保持神秘，是觉得没必要说的就不说。但你内心比外表感性得多——只是不轻易让人看到。',
+    personality_traits:[
+      '判断力很强，对人对事的评估通常很准，而且很难被改变第一印象',
+      '对自己要求高，对别人也有标准，完美主义有时候会让自己和周围人都很累',
+      '不轻易信任人，但一旦认定，会是非常忠诚的朋友/伴侣/合作者',
+      '遇到挫折时外表看不出来，但内心在高强度运转——你内耗的时候别人通常看不出来'
+    ],
+    romance:'你在感情里是「慢入型」——进入关系需要很长的观察期，但一旦进去了就是全力以赴。你最难的模式是：对对方要求很高，但自己不说出来，等对方没达到期待时感到失望。你需要的是：把你的标准说出来，而不是等对方来猜。',
+    career:'你天生适合「需要精准判断」的工作——分析、法律、金融、医疗、工程、咨询都是你的舒适区。你的核心竞争力是准确性和原则感，人们信任你，因为你不会轻易下结论，但下了结论就很可靠。',
+    growth:'你这辈子最核心的课题是：学会「接受不完美」——包括自己的不完美和别人的不完美。你的标准是你的力量，也是你的牢笼。学会在坚持标准和允许弹性之间找到节奏。',
+    tcm:'金型人肺和呼吸系统是重点。情绪压抑时最先反映在呼吸上——容易胸闷、叹气、肩颈紧张。有氧运动（跑步、游泳）对你帮助很大，帮助释放积压的能量。⚠️以上为日常参考，健康问题请咨询执业医师。',
+    compat:{'木':'金克木——你会不自觉地影响木型人的方向，他们接受得好是成长，接受不好是压抑。','火':'火克金——火型人的热情和冲动会让你感到不安，但也能帮你放松对控制的执念。','土':'土生金——土型人给你稳定的支持，你们是务实型的好搭档，相处很舒服。','金':'两个金型人在一起非常默契，但也容易两个人都太硬，遇到矛盾谁都不想先软化。','水':'金生水——水型人的流动和智慧是你的欣赏对象，你们能互相激发深度。'},
+    year2026:'2026丙午年，火气较旺，火克金——对金型人来说这一年有一定压力，不适合强行突破，顺势而为、稳扎稳打比冒进更有效。重要决策建议多想一步再行动。⚠️运势分析仅供参考，不构成预测。',
+  },
+  '水': {
+    emoji:'💧', color:'#2471a3', colorBg:'rgba(36,113,163,0.15)',
+    title:'水型人 · 智慧·流动',
+    daymaster_desc:'你是「水」日主——智慧型人格。越了解你越有层次，脑子里永远有平行宇宙在运转。你的感知力是天赋，很多事你"就是知道"。',
+    pattern_name:'深水智慧格',
+    pattern_desc:'水气旺盛，你的核心能量是智慧与流动。这个格局的人有很强的学习力和适应力，洞察力强，能快速理解复杂事物。',
+    ten_gods:'水日主的「印星」在金——你的能量来源是精准的信息和结构化的思考；「财星」在火——你赚钱靠的是热情和影响力的激活；「官星」在土——稳定感和踏实是你需要主动建立的课题。',
+    nayin_insight:'水型人的内在底色是一种「深渊感」——表面平静，甚至显得温和好说话，但水面下藏着的东西，连你自己都还没完全摸清。',
+    personality_core:'你是那种「让人越了解越有层次」的人。初见觉得平易近人，深交发现内里复杂。你不是故意神秘，是你本来就有层次——你自己有时候也在慢慢发现自己。',
+    personality_traits:[
+      '感知力极强，对人的情绪和场合的氛围非常敏感，很多时候你察觉到了但不说出来',
+      '学习力强，新东西上手快，但容易什么都想学，反而什么都没深入',
+      '对感兴趣的事全身心投入，对不感兴趣的几乎零驱动——不是懒，是你的能量运作方式',
+      '思虑过重，容易在脑子里把一件事想100遍，但实际上行动不如想象多'
+    ],
+    romance:'你在感情里给出去的是深海——细腻、真实、有深度。但你也有一个很深的模式：把委屈往心里藏，等积累到临界点突然冷掉，对方完全懵了，但你觉得已经忍很久了。你需要的是：在积累到临界点之前，主动说出来。',
+    career:'你天生适合「需要洞察力」的工作——研究、咨询、写作、心理、数据分析、策略规划都是你的舒适区。你的核心竞争力是深度思考和快速理解，最好的状态是有足够的自主空间，不被琐事打断。',
+    growth:'你这辈子最核心的课题是：找到「点燃你的理由」。你不缺能力，不缺感知力，你缺的是一个让你愿意全力以赴的方向。找到那件事，你的整张命盘才会真正被激活。',
+    tcm:'水型人肾和内分泌是能量库。睡眠质量对你的状态影响巨大——睡眠差时你的洞察力和判断力都会明显下降。23点前入睡对你特别重要，这不是玄学，是你的身体节律。⚠️以上为日常参考，健康问题请咨询执业医师。',
+    compat:{'木':'水生木——木型人是你天然的能量流向，你给他们养分，他们给你一个生长的方向。','火':'水克火——火型人的热情可以点燃你，但也容易让你感到消耗。关键是彼此都要有边界。','土':'土克水——土型人给你稳定感，但也可能让你觉得受限。他们能帮你落地，你能帮他们看远。','金':'金生水——金型人是你的精神同类，能聊到深处，相互理解不需要解释。','水':'两个水型人在一起思维世界非常默契，但也容易两个人都不行动，停留在想象里。'},
+    year2026:'2026丙午年，火是水型人的财星方向，是近几年里能量相对较好的一年。那些积压的计划值得认真启动——特别是和创作、表达、影响力相关的方向。⚠️运势分析仅供参考，不构成预测。',
+  },
+};
+
+// 紫微主星简化库（按年份星座分组，简化版）
+function getZiweiStar(year, month, day) {
+  // 简化：根据年干+月份组合给出主星倾向
+  const stemIdx = (year - 4) % 10;
+  const stars = ['天同','太阴','贪狼','天机','紫微','天府','太阳','武曲','天相','七杀'];
+  const star = stars[stemIdx];
+  const starData = {
+    '紫微':{ desc:'紫微入命——你天生有领导气质，不是那种强硬型的，是一种让人自然信服的存在感。', trait:'你对自己有很高的要求，有时候这种要求会让你显得不容易接近，但真正了解你的人知道你有多认真。' },
+    '天机':{ desc:'天机入命——你是典型的「思考者」，脑子转得很快，喜欢把事情想清楚再行动。', trait:'你的策略感很强，能看到别人看不到的角度，但有时候想太多反而会在行动上犹豫。' },
+    '太阳':{ desc:'太阳入命——你有一种自然的光芒感，对公共事务和社会议题有热情，喜欢为集体做贡献。', trait:'你给出去的通常比得到的多，需要学会照顾自己的能量，不要只是付出。' },
+    '武曲':{ desc:'武曲入命——执行力是你最大的武器，说到做到，对目标有强烈的推进欲。', trait:'你在工作上非常可靠，但有时候直接到让人感到压力。学会包装你的直接。' },
+    '天同':{ desc:'天同入命——你是典型的「感受型」人，对生活品质敏感，享受当下，追求内心的和谐。', trait:'你的共情能力很强，让人感到温暖，但有时候会为了维持和谐而回避必要的冲突。' },
+    '廉贞':{ desc:'廉贞入命——你有很强的原则感和美学感，对自己认可的事情全力以赴，对看不上的完全不投入。', trait:'你有自己的一套价值体系，不容易被外界左右，但也因此有时候显得固执。' },
+    '天府':{ desc:'天府入命——你有天然的资源整合能力，能吸引到贵人和资源，懂得储备和积累。', trait:'你给人的感觉是稳重而有底气，不是最高调的，但往往是最后赢的那个。' },
+    '太阴':{ desc:'太阴入命——你的内心世界非常丰富，对美和细节高度敏感，有很深的艺术感知力。', trait:'你外表平静，内心却在高速运转。你需要足够的独处时间来恢复能量。' },
+    '贪狼':{ desc:'贪狼入命——你有很强的魅力和多才多艺，在很多领域都能做得不错，人际关系是你的强项。', trait:'你对生活的欲望和好奇心很强，这是你的活力来源，但也容易分散注意力。' },
+    '巨门':{ desc:'巨门入命——你有很强的表达力和分析力，善于把复杂的东西说清楚，是天生的沟通者。', trait:'你对信息很敏感，喜欢探究真相，但有时候会因为说得太直而产生不必要的摩擦。' },
+    '天相':{ desc:'天相入命——你有天然的协调能力，能让不同的人和平相处，是团队里重要的粘合剂。', trait:'你的公平感很强，讨厌偏袒，总是希望每个人都被公平对待。' },
+    '天梁':{ desc:'天梁入命——你有很强的保护欲和正义感，遇到不公平的事情会主动站出来。', trait:'你是那种"有我在就放心"的存在，但也要注意不要把自己压得太重。' },
+    '七杀':{ desc:'七杀入命——你有很强的独立意识和执行力，不喜欢被约束，遇到挑战反而更兴奋。', trait:'你的爆发力很强，最好的状态是有明确的目标和充分的自主权。' },
+    '破军':{ desc:'破军入命——你是天生的变革者，不满足于现状，总是在寻找突破和改变。', trait:'你对重复和一成不变有天然的厌倦，这驱动你不断进化，但也让你很难在一个地方长期安定。' },
+  };
+  return { name: star, ...(starData[star] || starData['天同']) };
+}
+
+function startCalculate(){
+  const name = document.getElementById('inp-name').value.trim() || '你';
+  const year = parseInt(document.getElementById('inp-year').value);
+  const month = parseInt(document.getElementById('inp-month').value);
+  const day = parseInt(document.getElementById('inp-day').value);
+  const hourVal = document.getElementById('inp-hour').value;
+  const hour = hourVal === 'unknown' ? 12 : parseInt(hourVal);
+
+  // 计算四柱
+  const yearP = getYearPillar(year);
+  const monthP = getMonthPillar(year, month);
+  const dayP = getDayPillar(year, month, day);
+  const hourP = getHourPillar(dayP, hour);
+  const pillars = [yearP, monthP, dayP, hourP];
+
+  // 五行分布
+  const score = calcFiveElements(pillars);
+  const dominant = getDominant(score);
+  const weakest = getWeakest(score);
+  const dayEl = dayP.stemEl;
+
+  // 保存全局数据
+  window._user = { name, year, month, day, hour, yearP, monthP, dayP, hourP, score, dominant, dayEl, weakest };
+
+  // 更新Hero区
+  document.getElementById('hero-name').textContent = name + ' · ' + year + '年' + yearP.zodiac;
+
+  // 更新所有动态内容
+  updateAllPages(window._user);
+
+  const loader=document.getElementById('loader');
+  loader.classList.add('show');
+  setTimeout(()=>{loader.classList.remove('show');goPage(2);},2200);
+}
+
+function elBar(el, score) {
+  const maxScore = 8;
+  const pct = Math.min(Math.round((score / maxScore) * 100), 100);
+  const colors = {木:'#5a9e6e',火:'#c0452b',土:'#b8860b',金:'#8a9ba8',水:'#2471a3'};
+  const emojis = {木:'🌿',火:'🔥',土:'🏔️',金:'⚔️',水:'💧'};
+  const labels = {木:'强',火:'强',土:'中',金:'弱',水:'旺'};
+  return `<div style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+      <span>${emojis[el]} ${el}</span>
+      <span style="color:${colors[el]}">${score}点</span>
+    </div>
+    <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.07)">
+      <div style="height:100%;width:${pct}%;border-radius:3px;background:${colors[el]};transition:width 1s ease"></div>
+    </div>
+  </div>`;
+}
+
+function updateAllPages(u) {
+  const d = EL_DATA[u.dayEl] || EL_DATA['水'];
+  const ziwei = getZiweiStar(u.year, u.month, u.day);
+  const nayin = NAYIN[u.dayP.stem + u.dayP.branch] || '未知纳音';
+
+  // === Hero区更新 ===
+  const heroSub = document.getElementById('hero-sub');
+  if(heroSub) heroSub.textContent = u.dominant + '旺 · ' + u.dayP.stem + u.dayEl + '日主 · ' + ziwei.name + '入命';
+  const heroQuote = document.getElementById('hero-quote');
+  if(heroQuote) heroQuote.textContent = d.daymaster_desc;
+  const heroTags = document.getElementById('hero-tags');
+  if(heroTags) heroTags.innerHTML = `
+    <span class="tag">${d.emoji} ${u.dominant}旺</span>
+    <span class="tag">${d.emoji} ${u.dayP.stem}${u.dayEl}日主</span>
+    <span class="tag">⭐ ${ziwei.name}入命</span>
+    <span class="tag">🔢 ${nayin}纳音</span>
+  `;
+
+  // === 四柱格子更新 ===
+  const pillarGrid = document.getElementById('pillar-grid');
+  if(pillarGrid) {
+    const elColors = {木:'#5a9e6e',火:'#e88a6a',土:'var(--gold)',金:'#aab7b8',水:'#7ab8d9'};
+    const pData = [
+      {label:'年柱', p:u.yearP},
+      {label:'月柱', p:u.monthP},
+      {label:'日柱 ★', p:u.dayP, highlight:true},
+      {label:'时柱', p:u.hourP},
+    ];
+    const nayin2 = NAYIN[u.dayP.stem+u.dayP.branch]||'';
+    pillarGrid.innerHTML = pData.map((pd,i) => {
+      const ny = i===2 ? '·'+nayin2 : '';
+      return `<div class="pillar" style="border-color:${elColors[pd.p.stemEl]||'rgba(255,255,255,0.2)'}${pd.highlight?';background:rgba(201,168,76,0.06)':''}">
+        <div class="pillar-label">${pd.label}</div>
+        <div class="pillar-stem" style="color:${elColors[pd.p.stemEl]}">${pd.p.stem}</div>
+        <div class="pillar-branch">${pd.p.branch}</div>
+        <div class="pillar-el">${pd.p.stemEl} / ${pd.p.branchEl}${ny}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // === Page 2: 命盘总览 ===
+  const p2 = document.getElementById('page-2');
+  if(p2) {
+    // 四柱
+    p2.querySelectorAll('.pillar-stem')[0].textContent = u.yearP.stem;
+    p2.querySelectorAll('.pillar-branch')[0].textContent = u.yearP.branch;
+    p2.querySelectorAll('.pillar-el')[0].textContent = u.yearP.stemEl + ' / ' + u.yearP.branchEl;
+    p2.querySelectorAll('.pillar-stem')[1].textContent = u.monthP.stem;
+    p2.querySelectorAll('.pillar-branch')[1].textContent = u.monthP.branch;
+    p2.querySelectorAll('.pillar-el')[1].textContent = u.monthP.stemEl + ' / ' + u.monthP.branchEl;
+    p2.querySelectorAll('.pillar-stem')[2].textContent = u.dayP.stem;
+    p2.querySelectorAll('.pillar-branch')[2].textContent = u.dayP.branch;
+    p2.querySelectorAll('.pillar-el')[2].textContent = u.dayP.stemEl + ' / ' + u.dayP.branchEl;
+    p2.querySelectorAll('.pillar-stem')[3].textContent = u.hourP.stem;
+    p2.querySelectorAll('.pillar-branch')[3].textContent = u.hourP.branch;
+    p2.querySelectorAll('.pillar-el')[3].textContent = u.hourP.stemEl + ' / ' + u.hourP.branchEl;
+    // 五行条
+    const elBars = p2.querySelector('#el-bars');
+    if(elBars) elBars.innerHTML = ['木','火','土','金','水'].map(el => elBar(el, u.score[el]||0)).join('');
+    // 总览卡片
+    const overviewCard = p2.querySelector('#overview-card');
+    if(overviewCard) overviewCard.innerHTML = `
+      <div style="font-size:13px;color:var(--gold);margin-bottom:10px">💡 你的日主：${u.dayP.stem}${u.dayEl}（${d.emoji}${d.title}）</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.daymaster_desc}<br><br>
+      你命盘里<span style="color:var(--gold)">${u.dominant}最旺，${u.weakest}最弱</span>——这解释了你很多行为模式。</div>
+    `;
+  }
+
+  // === Page 3: 八字深度 ===
+  const p3 = document.getElementById('page-3');
+  if(p3) {
+    const bazi3 = p3.querySelector('#bazi-deep');
+    if(bazi3) bazi3.innerHTML = `
+      <div style="font-size:13px;color:var(--gold);margin-bottom:10px">📜 格局：${d.pattern_name}</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:16px">${d.pattern_desc}</div>
+      <div style="font-size:13px;color:var(--gold);margin-bottom:10px">⚖️ 十神关系</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:16px">${d.ten_gods}</div>
+      <div style="font-size:13px;color:var(--gold);margin-bottom:10px">🌙 纳音：${nayin}</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.nayin_insight}</div>
+    `;
+  }
+
+  // === Page 4: 紫微 ===
+  const p4 = document.getElementById('page-4');
+  if(p4) {
+    const ziwei4 = p4.querySelector('#ziwei-content');
+    if(ziwei4) ziwei4.innerHTML = `
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px">⭐ ${ziwei.name} 入命</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:14px">${ziwei.desc}</div>
+      <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--gold);margin-bottom:8px">✦ 你会认出自己的这个模式</div>
+        <div style="font-size:13px;color:var(--text-dim);line-height:1.9">${ziwei.trait}</div>
+      </div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9">
+        配合你的${u.dayEl}日主——${d.daymaster_desc}<br><br>
+        这两个能量叠加，造就了一个特别的你：<span style="color:var(--gold)">${d.personality_core}</span>
+      </div>
+      <div style="margin-top:14px;font-size:11px;color:var(--text-mute)">⚠️ 紫微斗数解读基于出生信息推算，结果仅供参考，不构成专业命理服务</div>
+    `;
+  }
+
+  // === Page 5: 五行体质 ===
+  const p5 = document.getElementById('page-5');
+  if(p5) {
+    const tcm5 = p5.querySelector('#tcm-content');
+    if(tcm5) tcm5.innerHTML = `
+      <div style="font-size:14px;font-weight:600;color:${d.color};margin-bottom:12px">${d.emoji} 你是${d.title}</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:16px">${d.daymaster_desc}</div>
+      <div style="font-size:13px;color:var(--gold);margin-bottom:10px">🌿 日常调养参考</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.tcm}</div>
+    `;
+  }
+
+  // === Page 6: 深度性格 ===
+  const p6 = document.getElementById('page-6');
+  if(p6) {
+    const char6 = p6.querySelector('#char-core');
+    if(char6) char6.innerHTML = `
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:14px">${d.personality_core}</div>
+      <div style="font-size:13px;color:var(--gold);margin-bottom:10px">🪞 你会认出自己的这些模式</div>
+      ${d.personality_traits.map(t => `<div style="display:flex;gap:8px;margin-bottom:8px;font-size:13px;color:var(--text-dim);line-height:1.8"><span style="color:#7ec88a;flex-shrink:0">→</span><span>${t}</span></div>`).join('')}
+    `;
+    const romance6 = p6.querySelector('#char-romance');
+    if(romance6) romance6.innerHTML = `<div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.romance}</div>`;
+    const career6 = p6.querySelector('#char-career');
+    if(career6) career6.innerHTML = `<div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.career}</div>`;
+    const growth6 = p6.querySelector('#char-growth');
+    if(growth6) growth6.innerHTML = `<div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.growth}</div>`;
+  }
+
+  // === Page 7: 关系兼容 ===
+  const p7 = document.getElementById('page-7');
+  if(p7) {
+    const compat7 = p7.querySelector('#compat-content');
+    if(compat7) {
+      const elNames = {木:'🌿木型',火:'🔥火型',土:'🏔️土型',金:'⚔️金型',水:'💧水型'};
+      compat7.innerHTML = Object.entries(d.compat).map(([el, desc]) => `
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">${elNames[el]}人</div>
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.9">${desc}</div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // === Page 8: 2026运势 ===
+  const p8 = document.getElementById('page-8');
+  if(p8) {
+    const year8 = p8.querySelector('#year2026-content');
+    if(year8) year8.innerHTML = `<div style="font-size:13px;color:var(--text-dim);line-height:1.9">${d.year2026}</div>`;
+  }
+}
+
+
+// ═══════════════════════════════
+// Tabs
+// ═══════════════════════════════
+function switchTab(group,idx){
+  const tabs=document.querySelectorAll('#'+group+'-tabs .tab');
+  const panels=document.querySelectorAll('[id^="'+group+'-panel-"]');
+  tabs.forEach((t,i)=>t.classList.toggle('active',i===idx));
+  panels.forEach((p,i)=>p.classList.toggle('active',i===idx));
+}
+
+// ═══════════════════════════════
+// Accordion
+// ═══════════════════════════════
+function toggleAcc(btn){
+  const body=btn.nextElementSibling;
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  const arr=btn.querySelector('span:last-child');
+  if(arr)arr.textContent=open?'▼':'▲';
+}
+
+// ═══════════════════════════════
+// Month data 2026
+// ═══════════════════════════════
+const MONTHS={
+  1:{title:'1月 · 丁丑月 · 蓄势待发',content:'年初整体能量偏保守，适合做规划、梳理思路，而不是大动作。丁火（月干）对你有帮助，但力道不足，还处于热身阶段。\n\n事业：整理去年的积累，把没做完的事情收尾，为3月的高峰做准备。不要在这个月做重大决策或大额支出。\n\n感情：关系维护月，主动一点，别让关系因为年初的忙碌而被晾着。\n\n💡 这个月适合做的一件事：列一张「2026年真正想要的3件事」清单，越具体越好。'},
+  2:{title:'2月 · 戊寅月 · 春节启动',content:'春节期间，戊寅月——戊土对你的日主是同类加持，寅木开始疏通你过旺的水气。整体能量明显上升，是全年启动的第一个窗口。\n\n事业：适合在春节假期期间完成一个重要的规划或方案。节后复工，可以主动提出新想法——这个月出现的机会不要等。\n\n感情：春节社交运很好，单身的人在人情往来里注意留心，有遇到对的人的机会。\n\n💡 这个月适合做的一件事：把你脑子里酝酿了很久的一个想法，在纸上写成完整的计划。'},
+  3:{title:'3月 · 己卯月 · 能量高峰期 🌟',content:'卯月，木气较旺，水被疏通，丙午年的火气配合木气，这是全年能量状态相对较好的时段。\n\n事业：这个月适合推进重要项目、开启新合作、让别人看见你。职场晋升、项目提案、重要谈判——都适合在这个月推进。\n\n感情：适合表达心意或深化感情的时机。有想说的话、有想推进的关系，这个月可以主动一些。\n\n💡 这个月适合做的一件事：做一件你之前一直想做但一直没启动的事，哪怕不完美，先开始。'},
+  4:{title:'4月 · 庚辰月 · 稳步落地',content:'3月高峰后进入执行阶段。庚金（月干）对你来说是「食伤」，代表表达和输出——这个月适合把想法落地成具体成果。\n\n事业：专注执行，把3月定下来的方向做扎实。不适合再开新局，适合把已有的事情做好做深。\n\n财运：这个月有不错的进账可能，但不适合做高风险投资。\n\n感情：稳定期，日常用心比轰轰烈烈的大动作更有效。\n\n💡 这个月适合做的一件事：复盘3月的行动，把成果和反馈整理一遍，优化下一步。'},
+  5:{title:'5月 · 辛巳月 · 谨慎月 ⚠️',content:'辛金+巳火，能量复杂，对戊土日主来说是摩擦较多的月份。小人运偏旺，容易遇到意外的阻力或人际摩擦。\n\n事业：低调行事，少在重要场合表态，多观察。已经推进的项目继续稳定执行，不要在这个月做重大决策或签重要合同。\n\n感情：避免因为小事争执升级。你的情绪在这个月会有点敏感，主动沟通而不是冷战。\n\n💡 这个月适合做的一件事：花时间独处，梳理自己真正想要什么，别被外部噪音影响。'},
+  6:{title:'6月 · 壬午月 · 回暖调整',content:'壬水月干对你是财星，午火地支对你是用神——财和能量同时到来，是个不错的平衡月。5月的摩擦开始消散。\n\n事业：修复5月里出现的裂痕，跟进那些因为5月而搁置的事情。这个月适合跟重要的合作方、同事重新拉近关系。\n\n财运：有额外收入的可能，注意合理规划，不要因为有进账就放松财务纪律。\n\n感情：主动和解月，如果5月有裂痕，6月是修复的好时机。\n\n💡 这个月适合做的一件事：把上半年做对的事情总结一遍，下半年复制这个模式。'},
+  7:{title:'7月 · 癸未月 · 积累转化',content:'你的生月——能量有特殊的共鸣，天同星的感受力在这个月会特别活跃。是学习、输入、深度思考的好时机。\n\n事业：学习运极旺，这个月学进去的东西格外容易转化为实际能力。适合参加培训、读专业书、或者深度研究一个你想突破的领域。人际上有贵人运，注意身边出现的新面孔。\n\n感情：感受力强，是深度交流的好时机，但也容易因为想太多而焦虑。\n\n💡 这个月适合做的一件事：认真学一件你之前一直想学但没时间的东西，哪怕只是入门。'},
+  8:{title:'8月 · 甲申月 · 厚积沉淀',content:'甲木疏水，能量偏内敛，是深度工作的绝佳时机，但不适合频繁社交和对外大动作。\n\n事业：做质量最高的工作在这个月——安静地深挖，产出的东西质量会超出预期。9-10月的爆发需要这个月的积累作为基础，不要因为表面看起来平静就焦虑。\n\n健康：注意休息，不要为了赶进度熬夜，这个月的深层积累需要好的睡眠来配合。\n\n💡 这个月适合做的一件事：做一件不会马上看到结果、但你知道是对的事。'},
+  9:{title:'9月 · 乙酉月 · 第二高峰 ✨',content:'全年第二个能量高峰，乙木继续疏水，酉金给食伤力量——你的表达力和输出能力在这个月达到峰值。\n\n事业：重要决策和重要推进的第二窗口。如果3月的机会没完全抓到，9月是补上的时机。这个月适合发布成果、做重要演示、或正式开启一个大项目。\n\n感情：感情上有重要进展的可能，主动表达心意，别等。\n\n💡 这个月适合做的一件事：把8月的积累变成一个对外可见的成果，哪怕是小的也好。'},
+  10:{title:'10月 · 丙戌月 · 突破窗口 🚀',content:'丙火（月干）配合丙午年的火气——双火叠加，这是全年能量相对最活跃的时段，命盘上来看是比较适合推进重要事项的窗口。\n\n事业：可以考虑在这个月推进之前犹豫的重要合作或决策，能量状态相对较好，值得把握。但最终结果还是取决于你的实际准备和判断。\n\n财运：收入方面有改善的可能，遇到机会可以积极跟进，同时保持理性评估。\n\n💡 这个月适合做的一件事：把你2026年最想推进的那件事，认真迈出具体的一步。'},
+  11:{title:'11月 · 丁亥月 · 收获期',content:'丁火月干，亥水地支——一收一放，能量进入平衡收获期。10月播下的种子开始看到果实。\n\n事业：巩固10月的突破成果，把资源和关系转化成稳定的积累。适合谈续约、整合团队、或做阶段性汇报。\n\n财运：这个月财运不错，适合做稳健的财务安排，而不是继续冒进。\n\n感情：关系进入稳定甜蜜期，珍惜这段平稳的时光。\n\n💡 这个月适合做的一件事：把这一年赚到的、学到的、连接到的，好好记录一遍。'},
+  12:{title:'12月 · 戊子月 · 整合收尾',content:'戊子月，干支和你的日柱完全相同——这是一个特别的能量共鸣月。你会在这个月对自己有更清晰的认知，是年末复盘和为明年布局的最好时机。\n\n事业：做2026年度总结，把成功的事情记录下来，把踩过的坑也记录下来。不适合再启动新项目，但适合为明年做准备、布局。\n\n感情：年末陪伴是最真实的情感投资，把时间留给真正重要的人。\n\n💡 这个月适合做的一件事：写一封信给2027年的自己——写你2026年学到的最重要的那件事。'}
+};
+
+function showMonth(n){
+  const cards=document.querySelectorAll('#mth-grid .mc');
+  const detail=document.getElementById('mth-detail');
+  const currentActive=document.querySelector('#mth-grid .mc.active');
+  const clicked=cards[n-1];
+
+  if(currentActive===clicked&&detail.classList.contains('open')){
+    detail.classList.remove('open');clicked.classList.remove('active');return;
+  }
+  cards.forEach(c=>c.classList.remove('active'));
+  clicked.classList.add('active');
+  document.getElementById('mth-title').textContent=MONTHS[n].title;
+  document.getElementById('mth-content').textContent=MONTHS[n].content;
+  document.getElementById('mth-content').style.whiteSpace='pre-line';
+  detail.classList.add('open');
+  setTimeout(()=>detail.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
+
+
+// ═══════════════════════════════
+// Supabase 口令验证
+// 【你需要修改下面两行，填入你自己的Supabase信息】
+// ═══════════════════════════════
+const SUPABASE_URL = 'https://ntzdqelisgnosykqkjyv.supabase.co';  // 例如: https://abcdefg.supabase.co
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50emRxZWxpc2dub3N5a3Franl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzMxODAsImV4cCI6MjA4NzE0OTE4MH0.RdvPRM04e6DJwM_7N2OiCV-MJXDuLuxWT4tYXfo0tqE'; // 在Supabase后台 Project Settings → API → anon/public
+
+// 初始化（全部包在try里，防止填入前预览报错）
+let _sb = null;
+try {
+  if(typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('https://')){
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+} catch(e){}
+
+// 检查本地是否已验证过（同一浏览器不用重复输入）
+(function(){
+  try {
+    if(localStorage.getItem('tm_verified') === 'yes'){
+      const ls = document.getElementById('lock-screen');
+      if(ls) ls.style.display = 'none';
+    }
+  } catch(e){}
+})();
+
+async function verifyCode(){
+  const input = document.getElementById('code-input').value.trim();
+  const errEl = document.getElementById('code-error');
+  const btn = document.getElementById('verify-btn');
+
+  if(!input){ errEl.textContent = '请输入口令'; return; }
+
+  // 还没填入Supabase信息时的提示
+  if(!_sb){
+    errEl.textContent = '系统尚未配置，请联系作者';
+    return;
+  }
+
+  btn.textContent = '验证中...';
+  btn.disabled = true;
+  errEl.textContent = '';
+
+  try {
+    const { data, error } = await _sb
+      .from('codes')
+      .select('id, used')
+      .eq('code', input)
+      .single();
+
+    if(error || !data){
+      errEl.textContent = '口令无效，请确认后重试';
+      btn.textContent = '验证口令 →';
+      btn.disabled = false;
+      return;
+    }
+
+    if(data.used){
+      errEl.textContent = '此口令已被使用，请联系作者';
+      btn.textContent = '验证口令 →';
+      btn.disabled = false;
+      return;
+    }
+
+    // 标记为已使用
+    await _sb.from('codes').update({ used: true }).eq('id', data.id);
+
+    // 本地记录已验证（同一浏览器不需重复输入）
+    try { localStorage.setItem('tm_verified', 'yes'); } catch(e){}
+
+    // 解锁内容
+    document.getElementById('lock-screen').style.display = 'none';
+
+  } catch(e) {
+    errEl.textContent = '网络错误，请检查网络后重试';
+    btn.textContent = '验证口令 →';
+    btn.disabled = false;
+  }
+}
+
+</script>
+</body>
+</html>
